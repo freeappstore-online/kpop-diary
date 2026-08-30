@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import type { Post } from '../types';
 
-const MOODS = ['😍','💗','✨','🥺','😭','🎵','💜','🔥','🌸','😊','💫','🎶'];
 const FILTERS_CSS: Record<string, string> = {
   none: '',
   soft: 'brightness(1.1) contrast(0.9) saturate(0.9)',
@@ -56,6 +55,7 @@ export function HomeScreen({ posts, diaryName, onLike, onSave, onDelete, onEdit,
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
       {/* Header */}
       <div style={{ padding: '0.75rem 1rem 0.5rem', borderBottom: '1px solid var(--line)', flexShrink: 0, background: 'var(--paper)' }}>
         {showSearch ? (
@@ -134,21 +134,18 @@ export function HomeScreen({ posts, diaryName, onLike, onSave, onDelete, onEdit,
                   </div>
                 </div>
 
-                {/* ── IMAGE: full picture, no crop ── */}
+                {/* ── IMAGE: no container height, image sizes itself naturally ── */}
                 {post.imageData && (
-                  <div style={{ background: '#0a0a0a', width: '100%' }}>
-                    <img
-                      src={post.imageData}
-                      alt=""
-                      style={{
-                        width: '100%',
-                        display: 'block',
-                        maxHeight: '70vw',   /* keeps it compact but never crops */
-                        objectFit: 'contain',
-                        filter: FILTERS_CSS[post.filter] || '',
-                      }}
-                    />
-                  </div>
+                  <img
+                    src={post.imageData}
+                    alt=""
+                    style={{
+                      display: 'block',
+                      width: '100%',
+                      height: 'auto',       /* natural height — never crops */
+                      filter: FILTERS_CSS[post.filter] || '',
+                    }}
+                  />
                 )}
 
                 {/* No-image mood card */}
@@ -158,7 +155,7 @@ export function HomeScreen({ posts, diaryName, onLike, onSave, onDelete, onEdit,
                   </div>
                 )}
 
-                {/* Caption + song tag */}
+                {/* Caption + song tag + actions */}
                 <div style={{ padding: '0.5rem 0.75rem 0.6rem' }}>
                   {post.songTag && (
                     <div style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.2rem' }}>🎵 {post.songTag}</div>
@@ -169,7 +166,6 @@ export function HomeScreen({ posts, diaryName, onLike, onSave, onDelete, onEdit,
                     </div>
                   )}
 
-                  {/* Action buttons */}
                   <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
                     <button onClick={() => onLike(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', gap: '0.2rem', color: post.liked ? '#e91e8c' : 'var(--muted)', transition: 'transform 0.15s', padding: 0 }}
                       onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.2)')}
@@ -181,6 +177,7 @@ export function HomeScreen({ posts, diaryName, onLike, onSave, onDelete, onEdit,
                     >{post.saved ? '🔖' : '🏷️'}</button>
                   </div>
                 </div>
+
               </div>
             ))}
           </div>
