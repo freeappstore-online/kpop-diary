@@ -1,5 +1,7 @@
 export type Theme = 'pink' | 'blue' | 'lavender' | 'strawberry' | 'midnight' | 'glitter' | 'dark' | 'softpastel';
 
+export type AvatarFrame = 'none' | 'pink' | 'rainbow' | 'gold' | 'kpop' | 'hearts' | 'stars' | 'midnight' | 'pastel' | 'fire';
+
 export interface StickerOnCanvas {
   id: string;
   emoji: string;
@@ -21,6 +23,8 @@ export interface Post {
   stickers: StickerOnCanvas[];
   filter: string;
   frame: string;
+  idol?: string;
+  tags?: string[];
 }
 
 export interface Idol {
@@ -51,6 +55,7 @@ export interface Profile {
   favIdol: string;
   favColour: string;
   avatarData?: string;
+  avatarFrame: AvatarFrame;
   theme: Theme;
   accentColour: string;
 }

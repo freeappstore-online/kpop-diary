@@ -17,6 +17,7 @@ const DEFAULT_PROFILE: Profile = {
   favGroup: '',
   favIdol: '',
   favColour: 'Pink',
+  avatarFrame: 'none',
   theme: 'pink',
   accentColour: '#e91e8c',
 };
@@ -35,35 +36,84 @@ function Sparkle({ style }: { style: React.CSSProperties }) {
   return <div style={{ position: 'fixed', pointerEvents: 'none', zIndex: 9999, fontSize: 16, ...style }} className="animate-sparkle">✨</div>;
 }
 
+// Toast component
+function Toast({ message, visible }: { message: string; visible: boolean }) {
+  return (
+    <div style={{
+      position: 'fixed', bottom: 90, left: '50%', transform: `translateX(-50%) translateY(${visible ? 0 : 20}px)`,
+      background: 'linear-gradient(135deg, var(--accent), var(--accent2, #b44fdb))',
+      color: 'white', padding: '0.65rem 1.25rem', borderRadius: '99px',
+      fontWeight: 700, fontSize: '0.9rem', zIndex: 9998,
+      opacity: visible ? 1 : 0, transition: 'all 0.3s ease',
+      pointerEvents: 'none', whiteSpace: 'nowrap',
+      boxShadow: '0 4px 20px rgba(233,30,140,0.4)',
+    }}>
+      {message}
+    </div>
+  );
+}
+
 export default function App() {
   const [tab, setTab] = useState<Tab>('home');
   const [modal, setModal] = useState<Modal>('none');
   const [posts, setPosts] = useState<Post[]>(() => load('kpd_posts', []));
   const [idols, setIdols] = useState<Idol[]>(() => load('kpd_idols', []));
   const [journals, setJournals] = useState<JournalEntry[]>(() => load('kpd_journals', []));
-  const [profile, setProfile] = useState<Profile>(() => load('kpd_profile', DEFAULT_PROFILE));
+  const [profile, setProfile] = useState<Profile>(() => {
+    const p = load('kpd_profile', DEFAULT_PROFILE);
+    return { ...DEFAULT_PROFILE, ...p }; // merge so avatarFrame always exists
+  });
   const [editPost, setEditPost] = useState<Post | null>(null);
+  const [cameraImage, setCameraImage] = useState<string | undefined>();
   const [searchQuery, setSearchQuery] = useState('');
   const [sparkles, setSparkles] = useState<{ id: string; x: number; y: number }[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
-  const [cameraImage, setCameraImage] = useState<string | undefined>();
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: '', visible: false });
 
-  // Apply theme
-  useEffect(() => {
-    const themeMap: Record<Theme, string> = {
-      pink: '', blue: 'blue', lavender: 'lavender', strawberry: 'strawberry',
-      midnight: 'midnight', glitter: 'glitter', dark: 'dark', softpastel: 'softpastel',
-    };
-    document.body.setAttribute('data-theme', themeMap[profile.theme] || '');
-  }, [profile.theme]);
-
-  // Persist
+  // ── Auto-save on every change ──
   useEffect(() => { save('kpd_posts', posts); }, [posts]);
   useEffect(() => { save('kpd_idols', idols); }, [idols]);
   useEffect(() => { save('kpd_journals', journals); }, [journals]);
   useEffect(() => { save('kpd_profile', profile); }, [profile]);
 
-  // Sparkle on clicks
+  // ── Manual save everything ──
+  function saveEverything() {
+    save('kpd_posts', posts);
+    save('kpd_idols', idols);
+    save('kpd_journals', journals);
+    save('kpd_profile', profile);
+    showToast('💾 Everything saved!');
+  }
+
+  function showToast(message: string) {
+    setToast({ message, visible: true });
+    setTimeout(() => setToast(t => ({ ...t, visible: false })), 2500);
+  }
+
+  // ── Apply theme ──
+  useEffect(() => {
+    const THEME_MAP: Record<string, { accent: string; accent2: string; accent3: string }> = {
+      pink:       { accent: '#e91e8c', accent2: '#b44fdb', accent3: '#ff6eb4' },
+      blue:       { accent: '#1a7fe8', accent2: '#5b4fdb', accent3: '#60a5fa' },
+      lavender:   { accent: '#7c3aed', accent2: '#a855f7', accent3: '#c084fc' },
+      strawberry: { accent: '#e81a1a', accent2: '#db4f4f', accent3: '#f87171' },
+      midnight:   { accent: '#c084fc', accent2: '#818cf8', accent3: '#38bdf8' },
+      glitter:    { accent: '#f59e0b', accent2: '#ec4899', accent3: '#fde68a' },
+      dark:       { accent: '#e91e8c', accent2: '#b44fdb', accent3: '#ff6eb4' },
+      softpastel: { accent: '#f97316', accent2: '#ec4899', accent3: '#fda4af' },
+    };
+    const colors = THEME_MAP[profile.theme] ?? THEME_MAP.pink;
+    const root = document.documentElement;
+    root.style.setProperty('--accent', colors.accent);
+    root.style.setProperty('--accent2', colors.accent2);
+    root.style.setProperty('--accent3', colors.accent3);
+    if (profile.theme === 'dark') {
+      root.setAttribute('data-theme', 'dark');
+    } else {
+      root.removeAttribute('data-theme');
+    }
+  }, [profile.theme]);
+
+  // ── Sparkle on click ──
   useEffect(() => {
     function onClick(e: MouseEvent) {
       const id = uid();
@@ -74,115 +124,99 @@ export default function App() {
     return () => window.removeEventListener('click', onClick);
   }, []);
 
-  function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 2500);
-  }
-
-  // Posts
+  // ── Handlers ──
   function handleSavePost(data: Omit<Post, 'id' | 'createdAt' | 'liked' | 'saved'>) {
     if (editPost) {
       setPosts(prev => prev.map(p => p.id === editPost.id ? { ...editPost, ...data } : p));
-      showToast('Post updated! ✨');
     } else {
-      const newPost: Post = { id: uid(), createdAt: new Date().toISOString(), liked: false, saved: false, ...data };
+      const newPost: Post = { ...data, id: uid(), createdAt: new Date().toISOString(), liked: false, saved: false };
       setPosts(prev => [newPost, ...prev]);
-      showToast('Post shared! 💗');
     }
     setModal('none');
     setEditPost(null);
     setCameraImage(undefined);
     setTab('home');
+    showToast('✨ Post saved!');
   }
 
-  function handleLike(id: string) {
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: !p.liked } : p));
-  }
-
-  function handleSaveToggle(id: string) {
-    setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: !p.saved } : p));
-  }
-
+  function handleLike(id: string) { setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: !p.liked } : p)); }
+  function handleSaveToggle(id: string) { setPosts(prev => prev.map(p => p.id === id ? { ...p, saved: !p.saved } : p)); }
   function handleDeletePost(id: string) {
     setPosts(prev => prev.filter(p => p.id !== id));
-    showToast('Post deleted');
+    showToast('🗑️ Post deleted');
   }
+  function handleEditPost(post: Post) { setEditPost(post); setModal('create'); }
+  function handleCameraCapture(imageData: string) { setCameraImage(imageData); setModal('create'); }
 
-  function handleEditPost(post: Post) {
-    setEditPost(post);
-    setModal('create');
-  }
-
-  // Camera
-  function handleCameraCapture(imageData: string) {
-    setCameraImage(imageData);
-    setModal('create');
-  }
-
-  // Idols
   function handleAddIdol(data: Omit<Idol, 'id' | 'createdAt'>) {
-    setIdols(prev => [{ id: uid(), createdAt: new Date().toISOString(), ...data }, ...prev]);
-    showToast('Idol added! ⭐');
+    setIdols(prev => [{ ...data, id: uid(), createdAt: new Date().toISOString() }, ...prev]);
+    showToast('💗 Idol added!');
   }
-  function handleEditIdol(idol: Idol) {
-    setIdols(prev => prev.map(i => i.id === idol.id ? idol : i));
-    showToast('Idol updated! ✨');
-  }
+  function handleEditIdol(idol: Idol) { setIdols(prev => prev.map(i => i.id === idol.id ? idol : i)); }
   function handleDeleteIdol(id: string) {
     setIdols(prev => prev.filter(i => i.id !== id));
-    showToast('Idol removed');
+    showToast('🗑️ Idol removed');
   }
 
-  // Journals
   function handleAddJournal(data: Omit<JournalEntry, 'id' | 'createdAt'>) {
-    setJournals(prev => [{ id: uid(), createdAt: new Date().toISOString(), ...data }, ...prev]);
-    showToast('Entry saved! 📔');
+    setJournals(prev => [{ ...data, id: uid(), createdAt: new Date().toISOString() }, ...prev]);
+    showToast('📓 Journal saved!');
   }
-  function handleEditJournal(entry: JournalEntry) {
-    setJournals(prev => prev.map(j => j.id === entry.id ? entry : j));
-    showToast('Entry updated! ✨');
-  }
+  function handleEditJournal(entry: JournalEntry) { setJournals(prev => prev.map(j => j.id === entry.id ? entry : j)); }
   function handleDeleteJournal(id: string) {
     setJournals(prev => prev.filter(j => j.id !== id));
-    showToast('Entry deleted');
+    showToast('🗑️ Entry deleted');
   }
 
-  // Profile
   function handleUpdateProfile(p: Profile) {
     setProfile(p);
-    showToast('Profile saved! 💗');
+    showToast('💾 Profile saved!');
   }
+  function handleThemeChange(t: Theme) { setProfile(prev => ({ ...prev, theme: t })); }
 
-  function handleThemeChange(t: Theme) {
-    setProfile(prev => ({ ...prev, theme: t }));
-  }
-
-  const NAV_ITEMS: { id: Tab; icon: string; label: string }[] = [
-    { id: 'home', icon: '🏠', label: 'Home' },
+  const NAV_ITEMS_LEFT  = [
+    { id: 'home',     icon: '🏠', label: 'Home' },
     { id: 'discover', icon: '🔍', label: 'Discover' },
-    { id: 'idols', icon: '💿', label: 'Idols' },
-    { id: 'me', icon: '👤', label: 'Me' },
+  ];
+  const NAV_ITEMS_RIGHT = [
+    { id: 'idols',    icon: '💿', label: 'Idols' },
+    { id: 'me',       icon: '👤', label: 'Me' },
   ];
 
   return (
-    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: 'var(--paper)', overflow: 'hidden', maxWidth: 540, margin: '0 auto', position: 'relative' }}>
+    <div style={{ position: 'fixed', inset: 0, display: 'flex', flexDirection: 'column', background: 'var(--paper)', color: 'var(--ink)', fontFamily: 'Manrope, sans-serif', overflow: 'hidden' }}>
+
       {/* Sparkles */}
-      {sparkles.map(s => (
-        <Sparkle key={s.id} style={{ left: s.x - 8, top: s.y - 8 }} />
-      ))}
+      {sparkles.map(s => <Sparkle key={s.id} style={{ left: s.x - 8, top: s.y - 8 }} />)}
 
       {/* Toast */}
-      {toast && (
-        <div className="animate-slideDown" style={{ position: 'fixed', top: 70, left: '50%', transform: 'translateX(-50%)', background: 'var(--ink)', color: 'var(--paper)', borderRadius: '99px', padding: '0.5rem 1.25rem', fontSize: '0.85rem', fontWeight: 600, zIndex: 9998, whiteSpace: 'nowrap', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
-          {toast}
-        </div>
-      )}
+      <Toast message={toast.message} visible={toast.visible} />
 
-      {/* Main content */}
-      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+      {/* ── SAVE EVERYTHING BUTTON (top-right, always visible) ── */}
+      <button
+        onClick={saveEverything}
+        title="Save everything"
+        style={{
+          position: 'fixed', top: 12, right: 12, zIndex: 500,
+          background: 'linear-gradient(135deg, var(--accent), var(--accent2, #b44fdb))',
+          color: 'white', border: 'none', borderRadius: '99px',
+          padding: '0.4rem 0.85rem', fontWeight: 700, fontSize: '0.78rem',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem',
+          boxShadow: '0 2px 12px rgba(233,30,140,0.35)',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.05)'; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+      >
+        💾 Save
+      </button>
+
+      {/* ── MAIN CONTENT ── */}
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
         {tab === 'home' && (
           <HomeScreen
             posts={posts}
+            diaryName={profile.username}
             onLike={handleLike}
             onSave={handleSaveToggle}
             onDelete={handleDeletePost}
@@ -195,12 +229,7 @@ export default function App() {
           />
         )}
         {tab === 'discover' && (
-          <DiscoverScreen
-            posts={posts}
-            journals={journals}
-            idols={idols}
-            onPostClick={post => { handleEditPost(post); }}
-          />
+          <DiscoverScreen posts={posts} onPostClick={post => { handleEditPost(post); }} />
         )}
         {tab === 'idols' && (
           <IdolsScreen
@@ -217,37 +246,35 @@ export default function App() {
             onUpdateProfile={handleUpdateProfile}
             onThemeChange={handleThemeChange}
             totalSaved={posts.filter(p => p.saved).length}
+            onSaveEverything={saveEverything}
           />
         )}
       </div>
 
-      {/* Bottom navigation */}
-      <div style={{ background: 'var(--dock)', borderTop: '1px solid var(--line)', flexShrink: 0, boxShadow: '0 -4px 20px rgba(0,0,0,0.06)', position: 'relative', zIndex: 50 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', padding: '0.5rem 0.25rem', paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))' }}>
-          {NAV_ITEMS.slice(0, 2).map(item => (
-            <NavBtn key={item.id} active={tab === item.id} onClick={() => { setTab(item.id); setModal('none'); }}>
-              <span style={{ fontSize: 22 }}>{item.icon}</span>
-              <span style={{ fontSize: '0.6rem', fontWeight: 700 }}>{item.label}</span>
-            </NavBtn>
-          ))}
+      {/* ── BOTTOM NAV ── */}
+      <nav style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-around', borderTop: '1px solid var(--line)', background: 'var(--paper)', padding: '0.25rem 0 0.5rem', flexShrink: 0, position: 'relative', zIndex: 100 }}>
+        {NAV_ITEMS_LEFT.map(item => (
+          <NavBtn key={item.id} active={tab === item.id} onClick={() => { setTab(item.id as Tab); setModal('none'); }}>
+            <span style={{ fontSize: 20 }}>{item.icon}</span>
+            <span>{item.label}</span>
+          </NavBtn>
+        ))}
 
-          {/* Create button */}
-          <button onClick={() => setModal('create')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--accent2))', border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(233,30,140,0.4)', transition: 'transform 0.15s, box-shadow 0.15s', color: 'white', fontSize: 24, marginTop: -12 }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 6px 24px rgba(233,30,140,0.5)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(233,30,140,0.4)'; }}>
-            ＋
-          </button>
+        {/* Centre create button */}
+        <button onClick={() => setModal('create')} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 56, height: 56, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--accent2, #b44fdb))', border: 'none', cursor: 'pointer', boxShadow: '0 4px 16px rgba(233,30,140,0.4)', transition: 'transform 0.15s, box-shadow 0.15s', color: 'white', fontSize: 24, marginTop: -12 }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.08)'; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+        >✏️</button>
 
-          {NAV_ITEMS.slice(2).map(item => (
-            <NavBtn key={item.id} active={tab === item.id} onClick={() => { setTab(item.id); setModal('none'); }}>
-              <span style={{ fontSize: 22 }}>{item.icon}</span>
-              <span style={{ fontSize: '0.6rem', fontWeight: 700 }}>{item.label}</span>
-            </NavBtn>
-          ))}
-        </div>
-      </div>
+        {NAV_ITEMS_RIGHT.map(item => (
+          <NavBtn key={item.id} active={tab === item.id} onClick={() => { setTab(item.id as Tab); setModal('none'); }}>
+            <span style={{ fontSize: 20 }}>{item.icon}</span>
+            <span>{item.label}</span>
+          </NavBtn>
+        ))}
+      </nav>
 
-      {/* Modals */}
+      {/* ── CAMERA MODAL ── */}
       {modal === 'camera' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: '#000' }}>
           <CameraScreen
@@ -257,9 +284,10 @@ export default function App() {
         </div>
       )}
 
+      {/* ── CREATE / EDIT POST MODAL ── */}
       {modal === 'create' && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)' }} onClick={() => { setModal('none'); setEditPost(null); setCameraImage(undefined); }}>
-          <div style={{ height: '92vh', background: 'var(--paper)', borderRadius: '1.5rem 1.5rem 0 0', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+          <div onClick={e => e.stopPropagation()} style={{ maxHeight: '92vh', overflowY: 'auto', borderRadius: '1.5rem 1.5rem 0 0', background: 'var(--paper)' }}>
             <PostCreator
               onSave={handleSavePost}
               onClose={() => { setModal('none'); setEditPost(null); setCameraImage(undefined); }}
@@ -269,23 +297,13 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* FreeAppStore link (required) */}
-      <div style={{ position: 'fixed', bottom: 80, right: 12, zIndex: 30 }}>
-        <a href="https://freeappstore.online" target="_blank" rel="noopener noreferrer"
-          style={{ fontSize: '0.6rem', color: 'var(--muted)', textDecoration: 'none', opacity: 0.6 }}>
-          FreeAppStore
-        </a>
-      </div>
     </div>
   );
 }
 
 function NavBtn({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.25rem 0.75rem', background: 'none', border: 'none', cursor: 'pointer', color: active ? 'var(--accent)' : 'var(--muted)', transition: 'all 0.2s', borderRadius: '0.5rem', minWidth: 52 }}
-      onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-2px)')}
-      onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
+    <button onClick={onClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '0.3rem 0.75rem', background: 'none', border: 'none', cursor: 'pointer', color: active ? 'var(--accent)' : 'var(--muted)', fontWeight: active ? 700 : 500, fontSize: '0.68rem', transition: 'color 0.2s', minWidth: 48 }}>
       {children}
     </button>
   );
