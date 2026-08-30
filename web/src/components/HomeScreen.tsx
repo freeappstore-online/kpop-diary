@@ -40,167 +40,152 @@ function HeaderBtn({ onClick, title, children }: { onClick: () => void; title: s
 export function HomeScreen({ posts, diaryName, onLike, onSave, onDelete, onEdit, onOpenCreate, onOpenCamera, onOpenProfile, searchQuery, setSearchQuery }: Props) {
   const [showSearch, setShowSearch] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
-  const [likeAnim, setLikeAnim] = useState<string | null>(null);
-  const searchRef = useRef<HTMLInputElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const displayName = diaryName || '🎀 My Diary';
 
-  const filtered = posts.filter(p => {
+  const filtered = posts.filter(post => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return (p.caption || '').toLowerCase().includes(q) || (p.tags || []).some(t => t.toLowerCase().includes(q)) || (p.idol || '').toLowerCase().includes(q);
+    return (
+      post.caption?.toLowerCase().includes(q) ||
+      post.mood?.toLowerCase().includes(q) ||
+      post.songTag?.toLowerCase().includes(q)
+    );
   });
 
-  function handleLike(id: string) {
-    setLikeAnim(id);
-    onLike(id);
-    setTimeout(() => setLikeAnim(null), 600);
-  }
-
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--paper)' }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem', gap: '0.5rem', borderBottom: '1px solid var(--line)', background: 'var(--paper)', flexShrink: 0 }}>
+      <div style={{ padding: '0.75rem 1rem 0.5rem', borderBottom: '1px solid var(--line)', flexShrink: 0, background: 'var(--paper)' }}>
         {showSearch ? (
-          <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button onClick={() => { setShowSearch(false); setSearchQuery(''); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', fontSize: 20 }}>←</button>
             <input
-              ref={searchRef}
+              autoFocus
+              type="text"
+              placeholder="Search posts…"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search posts, tags, idols…"
-              autoFocus
-              style={{ flex: 1, border: '1.5px solid var(--line)', borderRadius: '0.75rem', padding: '0.4rem 0.75rem', fontSize: '0.9rem', background: 'var(--panel)', color: 'var(--ink)', outline: 'none' }}
+              style={{ flex: 1, background: 'var(--panel)', border: '1.5px solid var(--line)', borderRadius: '0.75rem', padding: '0.5rem 0.75rem', color: 'var(--ink)', fontSize: '0.9rem', outline: 'none' }}
             />
-          </>
+          </div>
         ) : (
-          <>
-            <div style={{ flex: 1, fontFamily: 'Fraunces, serif', fontWeight: 800, fontSize: '1.25rem', color: 'var(--accent)', letterSpacing: '-0.01em' }}>
-              🎀 {displayName}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 800, fontSize: '1.25rem', background: 'linear-gradient(135deg, var(--accent), var(--accent2, #b44fdb))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+              {displayName}
             </div>
-            <HeaderBtn onClick={() => { setShowSearch(true); setTimeout(() => searchRef.current?.focus(), 50); }} title="Search">🔍</HeaderBtn>
-            <HeaderBtn onClick={onOpenCamera} title="Camera">📷</HeaderBtn>
-            <HeaderBtn onClick={onOpenProfile} title="Profile">👤</HeaderBtn>
-          </>
+            <div style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+              <HeaderBtn onClick={() => setShowSearch(true)} title="Search">🔍</HeaderBtn>
+              <HeaderBtn onClick={onOpenCamera} title="Camera">📷</HeaderBtn>
+              <HeaderBtn onClick={onOpenCreate} title="Create post">✏️</HeaderBtn>
+            </div>
+          </div>
         )}
       </div>
 
       {/* Feed */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-        {filtered.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '3rem 1rem', color: 'var(--muted)' }}>
-            <div style={{ fontSize: 48, marginBottom: '0.75rem' }}>💗</div>
-            <div style={{ fontFamily: 'Fraunces, serif', fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 0.75rem 1rem' }}>
+        {filtered.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--muted)' }}>
+            <div style={{ fontSize: 56, marginBottom: '0.75rem' }}>🌸</div>
+            <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 800, fontSize: '1.2rem', marginBottom: '0.35rem', color: 'var(--ink)' }}>
               {searchQuery ? 'No posts found' : 'Start your diary!'}
             </div>
-            <div style={{ fontSize: '0.875rem' }}>
+            <div style={{ fontSize: '0.88rem' }}>
               {searchQuery ? 'Try a different search' : 'Tap ✏️ to create your first post'}
             </div>
           </div>
-        )}
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {filtered.map((post, i) => (
+              <div key={post.id} className="animate-fadeIn" style={{ animationDelay: `${i * 0.05}s`, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
 
-        {filtered.map((post, i) => (
-          <div key={post.id} className="animate-fadeIn" style={{ animationDelay: `${i * 0.05}s`, background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: '1.25rem', overflow: 'hidden', boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
-            {/* Post header */}
-            <div style={{ display: 'flex', alignItems: 'center', padding: '0.75rem 1rem', gap: '0.5rem' }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0 }}>
-                {post.mood || '💗'}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{displayName}</div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{new Date(post.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
-              </div>
-              {post.idol && <div style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 600, background: 'color-mix(in srgb, var(--accent) 12%, transparent)', padding: '0.2rem 0.5rem', borderRadius: '0.5rem' }}>⭐ {post.idol}</div>}
-              {/* Menu */}
-              <div style={{ position: 'relative' }}>
-                <button onClick={() => setMenuOpen(menuOpen === post.id ? null : post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--muted)', padding: '0.25rem' }}>⋯</button>
-                {menuOpen === post.id && (
-                  <div className="animate-pop" style={{ position: 'absolute', right: 0, top: '100%', background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: '0.75rem', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 20, minWidth: 140, overflow: 'hidden' }}>
-                    <button onClick={() => { onEdit(post); setMenuOpen(null); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 1rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', color: 'var(--ink)' }}>✏️ Edit</button>
-                    <button onClick={() => { onDelete(post.id); setMenuOpen(null); }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.6rem 1rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem', color: '#e53e3e' }}>🗑️ Delete</button>
+                {/* Post header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 0.75rem 0.4rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--accent2, #b44fdb))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'white', fontWeight: 700, flexShrink: 0 }}>
+                      {post.mood || '💗'}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: '0.78rem' }}>{displayName}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--muted)' }}>
+                        {new Date(post.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu */}
+                  <div style={{ position: 'relative' }} ref={menuRef}>
+                    <button onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === post.id ? null : post.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--muted)', padding: '0.2rem 0.4rem', borderRadius: '0.5rem' }}>⋯</button>
+                    {menuOpen === post.id && (
+                      <div className="animate-pop" style={{ position: 'absolute', right: 0, top: '100%', background: 'var(--panel)', border: '1px solid var(--line)', borderRadius: '0.75rem', boxShadow: '0 8px 24px rgba(0,0,0,0.12)', zIndex: 20, minWidth: 140, overflow: 'hidden' }}>
+                        {[
+                          { label: '✏️ Edit', action: () => { onEdit(post); setMenuOpen(null); } },
+                          { label: '🗑️ Delete', action: () => { onDelete(post.id); setMenuOpen(null); } },
+                        ].map(item => (
+                          <button key={item.label} onClick={item.action} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.65rem 1rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: 'var(--ink)', fontWeight: 600 }}
+                            onMouseEnter={e => (e.currentTarget.style.background = 'var(--line)')}
+                            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+                          >{item.label}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* ── IMAGE: full picture, no crop ── */}
+                {post.imageData && (
+                  <div style={{ background: '#0a0a0a', width: '100%' }}>
+                    <img
+                      src={post.imageData}
+                      alt=""
+                      style={{
+                        width: '100%',
+                        display: 'block',
+                        maxHeight: '70vw',   /* keeps it compact but never crops */
+                        objectFit: 'contain',
+                        filter: FILTERS_CSS[post.filter] || '',
+                      }}
+                    />
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Image */}
-            {post.imageData && (
-              <div style={{ position: 'relative', background: '#0a0a0a' }}>
-                <img
-                  src={post.imageData}
-                  alt=""
-                  style={{ width: '100%', display: 'block', objectFit: 'contain', filter: FILTERS_CSS[post.filter] || '' }}
-                />
-                {/* Stickers */}
-                {(post.stickers || []).map(s => (
-                  <div key={s.id} style={{ position: 'absolute', left: `${s.x}%`, top: `${s.y}%`, fontSize: s.size, transform: `rotate(${s.rotation}deg)`, pointerEvents: 'none', userSelect: 'none' }}>{s.emoji}</div>
-                ))}
-                {/* Like animation */}
-                {likeAnim === post.id && (
-                  <div className="animate-heartbeat" style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 80, pointerEvents: 'none' }}>❤️</div>
+                {/* No-image mood card */}
+                {!post.imageData && (
+                  <div style={{ padding: '1.5rem', background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, transparent), color-mix(in srgb, var(--accent2, #b44fdb) 8%, transparent))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 48 }}>
+                    {post.mood || '💗'}
+                  </div>
                 )}
-                {/* Frames */}
-                {post.frame === 'polaroid' && <div style={{ position: 'absolute', inset: 0, border: '12px solid white', borderBottom: '40px solid white', pointerEvents: 'none' }} />}
-                {post.frame === 'glitter' && <div style={{ position: 'absolute', inset: 0, border: '8px solid transparent', backgroundImage: 'linear-gradient(var(--panel), var(--panel)), linear-gradient(135deg, gold, hotpink, cyan, gold)', backgroundOrigin: 'border-box', backgroundClip: 'padding-box, border-box', pointerEvents: 'none', borderRadius: 2 }} />}
-              </div>
-            )}
 
-            {/* No image — mood card */}
-            {!post.imageData && (
-              <div style={{ background: 'linear-gradient(135deg, color-mix(in srgb, var(--accent) 15%, transparent), color-mix(in srgb, var(--accent) 5%, transparent))', padding: '2rem', textAlign: 'center', fontSize: 48 }}>
-                {post.mood || '💗'}
-              </div>
-            )}
+                {/* Caption + song tag */}
+                <div style={{ padding: '0.5rem 0.75rem 0.6rem' }}>
+                  {post.songTag && (
+                    <div style={{ fontSize: '0.72rem', color: 'var(--accent)', fontWeight: 700, marginBottom: '0.2rem' }}>🎵 {post.songTag}</div>
+                  )}
+                  {post.caption && (
+                    <div style={{ fontSize: '0.85rem', color: 'var(--ink)', lineHeight: 1.5, wordBreak: 'break-word' }}>
+                      {post.caption}
+                    </div>
+                  )}
 
-            {/* Caption */}
-            {post.caption && (
-              <div style={{ padding: '0.75rem 1rem 0.5rem', fontSize: '0.9rem', lineHeight: 1.5 }}>
-                {post.mood && <span style={{ marginRight: '0.35rem' }}>{post.mood}</span>}
-                {post.caption}
+                  {/* Action buttons */}
+                  <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                    <button onClick={() => onLike(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', gap: '0.2rem', color: post.liked ? '#e91e8c' : 'var(--muted)', transition: 'transform 0.15s', padding: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.2)')}
+                      onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                    >{post.liked ? '❤️' : '🤍'}</button>
+                    <button onClick={() => onSave(post.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, display: 'flex', alignItems: 'center', gap: '0.2rem', color: post.saved ? 'var(--accent)' : 'var(--muted)', transition: 'transform 0.15s', padding: 0 }}
+                      onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.2)')}
+                      onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                    >{post.saved ? '🔖' : '🏷️'}</button>
+                  </div>
+                </div>
               </div>
-            )}
-
-            {/* Tags */}
-            {post.tags && post.tags.length > 0 && (
-              <div style={{ padding: '0 1rem 0.5rem', display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                {post.tags.map(t => (
-                  <span key={t} style={{ fontSize: '0.78rem', color: 'var(--accent)', fontWeight: 600 }}>#{t}</span>
-                ))}
-              </div>
-            )}
-
-            {/* Actions */}
-            <div style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 0.75rem', gap: '0.25rem', borderTop: '1px solid var(--line)' }}>
-              <button
-                onClick={() => handleLike(post.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: post.liked ? '#e53e3e' : 'var(--muted)', fontWeight: post.liked ? 700 : 400, padding: '0.4rem 0.6rem', borderRadius: '0.5rem', transition: 'all 0.15s' }}
-              >
-                {post.liked ? '❤️' : '🤍'} {post.likes || 0}
-              </button>
-              <button
-                onClick={() => onSave(post.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: post.saved ? 'var(--accent)' : 'var(--muted)', fontWeight: post.saved ? 700 : 400, padding: '0.4rem 0.6rem', borderRadius: '0.5rem', transition: 'all 0.15s' }}
-              >
-                {post.saved ? '🔖' : '📌'} {post.saved ? 'Saved' : 'Save'}
-              </button>
-              <div style={{ flex: 1 }} />
-              {post.frame && post.frame !== 'none' && (
-                <span style={{ fontSize: '0.75rem', color: 'var(--muted)', background: 'var(--paper)', padding: '0.2rem 0.5rem', borderRadius: '0.5rem' }}>
-                  {post.frame === 'polaroid' ? '🖼️' : post.frame === 'film' ? '🎞️' : post.frame === 'diary' ? '📔' : post.frame === 'glitter' ? '✨' : post.frame === 'kpop' ? '💿' : ''} {post.frame}
-                </span>
-              )}
-            </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
-
-      {/* FAB */}
-      <button
-        onClick={onOpenCreate}
-        style={{ position: 'fixed', bottom: '5rem', right: '1.25rem', width: 52, height: 52, borderRadius: '50%', background: 'var(--accent)', color: 'white', border: 'none', cursor: 'pointer', fontSize: 22, boxShadow: '0 4px 20px color-mix(in srgb, var(--accent) 40%, transparent)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}
-      >
-        ✏️
-      </button>
     </div>
   );
 }
