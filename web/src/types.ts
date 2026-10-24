@@ -37,6 +37,11 @@ export interface Idol {
   notes: string;
   folder: string;
   createdAt: string;
+  // extra info fields
+  birthday?: string;
+  position?: string;
+  nationality?: string;
+  debutYear?: string;
 }
 
 export interface JournalEntry {
@@ -58,4 +63,45 @@ export interface Profile {
   avatarFrame: AvatarFrame;
   theme: Theme;
   accentColour: string;
+}
+
+// ── Cards ──────────────────────────────────────────────
+export type CardRarity = 'common' | 'rare' | 'epic' | 'legendary';
+
+export interface PhotoCard {
+  id: string;
+  idolName: string;
+  group: string;
+  era: string;
+  imageData?: string;
+  rarity: CardRarity;
+  foil: boolean;
+  obtainedAt: string;
+  count: number; // duplicates
+  favourite: boolean;
+}
+
+// ── Shop / Merch ───────────────────────────────────────
+export type MerchType = 'sticker' | 'merch' | 'frame' | 'badge';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  emoji: string;
+  type: MerchType;
+  cost: number;
+  rarity: CardRarity;
+  description: string;
+}
+
+export interface OwnedItem {
+  itemId: string;
+  obtainedAt: string;
+  count: number;
+}
+
+export interface UserInventory {
+  coins: number;
+  ownedItems: OwnedItem[];
+  cardPacks: number; // unopened packs
 }
