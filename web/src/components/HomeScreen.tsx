@@ -36,7 +36,7 @@ function HeaderBtn({ onClick, title, children }: { onClick: () => void; title: s
   );
 }
 
-export function HomeScreen({ posts, diaryName, onLike, onSave, onDelete, onEdit, onOpenCreate, onOpenCamera, onOpenProfile, searchQuery, setSearchQuery }: Props) {
+export function HomeScreen({ posts, diaryName, onLike, onSave, onDelete, onEdit, onOpenCreate, onOpenCamera, searchQuery, setSearchQuery }: Props) {
   const [showSearch, setShowSearch] = useState(false);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);

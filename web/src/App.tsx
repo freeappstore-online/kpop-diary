@@ -101,10 +101,12 @@ export default function App() {
   }, []);
 
   // Post actions
-  const handleSavePost = useCallback((post: Post) => {
+  const handleSavePost = useCallback((data: Omit<Post, 'id' | 'createdAt' | 'liked' | 'saved'>) => {
     setPosts(prev => {
-      const exists = prev.find(p => p.id === post.id);
-      return exists ? prev.map(p => p.id === post.id ? post : p) : [post, ...prev];
+      const existing = editPost && prev.find(p => p.id === editPost.id);
+      if (existing) return prev.map(p => p.id === existing.id ? { ...existing, ...data } : p);
+      const post: Post = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString(), liked: false, saved: false };
+      return [post, ...prev];
     });
     // Earn coins for posting
     setCoins(c => c + 15);
@@ -112,7 +114,7 @@ export default function App() {
     setEditPost(undefined);
     setInitialImage(undefined);
     showToast('🌸 Post saved! +15 🪙');
-  }, [showToast]);
+  }, [showToast, editPost]);
 
   const handleLike = useCallback((id: string) => {
     setPosts(prev => prev.map(p => p.id === id ? { ...p, liked: !p.liked } : p));

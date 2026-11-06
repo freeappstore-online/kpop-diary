@@ -230,7 +230,4 @@ export function JournalScreen({ entries, onAdd, onEdit, onDelete }: Props) {
       )}
     </div>
   );
-
-  function formatDate(iso: string) { return new Date(iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); }
-  function formatTime(iso: string) { return new Date(iso).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); }
 }

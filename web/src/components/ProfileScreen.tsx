@@ -66,7 +66,7 @@ export function ProfileScreen({ profile, posts, cards, ownedItems, coins, onUpda
         <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
           <div style={{ position: 'relative', cursor: editing ? 'pointer' : 'default' }} onClick={() => editing && fileRef.current?.click()}>
             <AvatarWithFrame
-              imageData={editing ? draft.avatarData : profile.avatarData}
+              avatarData={editing ? draft.avatarData : profile.avatarData}
               frame={editing ? draft.avatarFrame : profile.avatarFrame}
               size={88}
             />
